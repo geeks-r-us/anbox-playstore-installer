@@ -24,12 +24,12 @@
 # die when an error occurs
 set -e
 
-OPENGAPPS_RELEASEDATE="20180414"
+OPENGAPPS_RELEASEDATE="20180620"
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
 HOUDINI_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
-HOUDINI_SO="https://github.com/rrrfff/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
+HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
 
 WORKDIR="$(pwd)/anbox-work"
 
@@ -134,7 +134,7 @@ $SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework
 cd $WORKDIR
 if [ ! -f ./houdini.sfs ]; then
   $WGET -q --show-progress $HOUDINI_URL
-  mkdir houdini
+  mkdir -p houdini
   $SUDO $UNSQUASHFS -f -d ./houdini ./houdini.sfs
 fi
 
@@ -146,7 +146,7 @@ $SUDO chown -R 100000:100000 ./squashfs-root/system/bin/houdini ./squashfs-root/
 $SUDO $WGET -q --show-progress -P ./squashfs-root/system/lib/ $HOUDINI_SO
 $SUDO chown -R 100000:100000 ./squashfs-root/system/lib/libhoudini.so
 
-$SUDO mkdir ./squashfs-root/system/lib/arm
+$SUDO mkdir -p ./squashfs-root/system/lib/arm
 $SUDO cp -r ./houdini/linker ./squashfs-root/system/lib/arm
 $SUDO cp -r ./houdini/*.so ./squashfs-root/system/lib/arm
 $SUDO cp -r ./houdini/nb ./squashfs-root/system/lib/arm/
@@ -154,7 +154,7 @@ $SUDO cp -r ./houdini/nb ./squashfs-root/system/lib/arm/
 $SUDO chown -R 100000:100000 ./squashfs-root/system/lib/arm
 
 # add houdini parser
-mkdir ./squashfs-root/system/etc/binfmt_misc
+mkdir -p ./squashfs-root/system/etc/binfmt_misc
 echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" >> ./squashfs-root/system/etc/binfmt_misc/arm_dyn
 echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" >> ./squashfs-root/system/etc/binfmt_misc/arm_exe
 $SUDO chown -R 100000:100000 ./squashfs-root/system/etc/binfmt_misc
@@ -203,14 +203,20 @@ $SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
 # update anbox snap images
 cd /var/lib/snapd/snaps
 
-$SUDO systemctl stop snap.anbox.container-manager.service
+until $SUDO systemctl stop snap.anbox.container-manager.service
+do
+	sleep 10
+done
+
 for filename in anbox_*.snap
 do
     NUMBER=${filename//[^0-9]/}
 		if [ "$NUMBER" ]; then
     	echo "changing anbox snap $NUMBER"
-
-    	$SUDO systemctl stop snap-anbox-$NUMBER.mount
+    	until $SUDO systemctl stop snap-anbox-$NUMBER.mount
+		do
+			sleep 10
+		done 
     	$SUDO $UNSQUASHFS $filename
     	$SUDO mv ./squashfs-root/android.img ./andorid.img-$NUMBER
     	$SUDO cp $WORKDIR/android.img ./squashfs-root
