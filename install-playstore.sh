@@ -218,7 +218,7 @@ do
 			sleep 10
 		done 
     	$SUDO $UNSQUASHFS $filename
-    	$SUDO mv ./squashfs-root/android.img ./andorid.img-$NUMBER
+    	$SUDO mv ./squashfs-root/android.img ./android.img-$NUMBER
     	$SUDO cp $WORKDIR/android.img ./squashfs-root
     	$SUDO rm $filename
     	$SUDO $MKSQUASHFS squashfs-root $filename -b 131072 -comp xz -Xbcj x86
