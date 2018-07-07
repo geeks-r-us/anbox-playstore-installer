@@ -24,7 +24,7 @@
 # die when an error occurs
 set -e
 
-OPENGAPPS_RELEASEDATE="20180620"
+OPENGAPPS_RELEASEDATE="20180706"
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
@@ -53,7 +53,7 @@ fi
 
 # check if squashfs-tools are installed
 if [ ! "$(which mksquashfs)" ] || [ ! "$(which unsquashfs)" ]; then
-	echo -e "squashfs-tools is not installed. Please install lzip.\nExample: sudo apt install squashfs-tools"
+	echo -e "squashfs-tools is not installed. Please install squashfs-tools.\nExample: sudo apt install squashfs-tools"
 	exit 1
 else
 	MKSQUASHFS=$(which mksquashfs)
@@ -62,7 +62,7 @@ fi
 
 # check if wget is installed
 if [ ! "$(which wget)" ]; then
-	echo -e "wget is not installed. Please install lzip.\nExample: sudo apt install wget"
+	echo -e "wget is not installed. Please install wget.\nExample: sudo apt install wget"
 	exit 1
 else
 	WGET=$(which wget)
@@ -70,7 +70,7 @@ fi
 
 # check if unzip is installed
 if [ ! "$(which unzip)" ]; then
-	echo -e "unzip is not installed. Please install lzip.\nExample: sudo apt install unzip"
+	echo -e "unzip is not installed. Please install unzip.\nExample: sudo apt install unzip"
 	exit 1
 else
 	UNZIP=$(which unzip)
@@ -78,7 +78,7 @@ fi
 
 # check if tar is installed
 if [ ! "$(which tar)" ]; then
-	echo -e "tar is not installed. Please install lzip.\nExample: sudo apt install tar"
+	echo -e "tar is not installed. Please install tar.\nExample: sudo apt install tar"
 	exit 1
 else
 	TAR=$(which tar)
