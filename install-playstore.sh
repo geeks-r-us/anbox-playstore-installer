@@ -92,13 +92,13 @@ else
 fi
 
 echo $WORKDIR
-if [ ! -d $WORKDIR ]; then
-    mkdir $WORKDIR
+if [ ! -d "$WORKDIR" ]; then
+    mkdir "$WORKDIR"
 fi
 
-cd $WORKDIR
+cd "$WORKDIR"
 
-if [ -d $WORKDIR/squashfs-root ]; then
+if [ -d "$WORKDIR/squashfs-root" ]; then
   $SUDO rm -rf squashfs-root
 fi
 
@@ -107,7 +107,7 @@ cp /snap/anbox/current/android.img .
 $SUDO $UNSQUASHFS android.img
 
 # get opengapps and install it
-cd $WORKDIR
+cd "$WORKDIR"
 if [ ! -f ./$OPENGAPPS_FILE ]; then
   $WGET -q --show-progress $OPENGAPPS_URL
   $UNZIP -d opengapps ./$OPENGAPPS_FILE
@@ -120,7 +120,7 @@ do
     $TAR --lzip -xvf ./$filename
 done
 
-cd $WORKDIR
+cd "$WORKDIR"
 
 $SUDO cp -r ./$(find opengapps -type d -name "PrebuiltGmsCore")						./squashfs-root/system/priv-app/
 $SUDO cp -r ./$(find opengapps -type d -name "GoogleLoginService")				./squashfs-root/system/priv-app/
@@ -131,7 +131,7 @@ cd ./squashfs-root/system/priv-app/
 $SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework PrebuiltGmsCore
 
 # load houdini and spread it
-cd $WORKDIR
+cd "$WORKDIR"
 if [ ! -f ./houdini.sfs ]; then
   $WGET -q --show-progress $HOUDINI_URL
   mkdir -p houdini
@@ -196,7 +196,7 @@ $SUDO echo "persist.sys.nativebridge=1" >> ./squashfs-root/system/build.prop
 $SUDO echo "ro.opengles.version=131072" >> ./squashfs-root/system/build.prop
 
 #squash img
-cd $WORKDIR
+cd "$WORKDIR"
 rm android.img
 $SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
 
@@ -219,7 +219,7 @@ do
 		done 
     	$SUDO $UNSQUASHFS $filename
     	$SUDO mv ./squashfs-root/android.img ./android.img-$NUMBER
-    	$SUDO cp $WORKDIR/android.img ./squashfs-root
+    	$SUDO cp "$WORKDIR/android.img" ./squashfs-root
     	$SUDO rm $filename
     	$SUDO $MKSQUASHFS squashfs-root $filename -b 131072 -comp xz -Xbcj x86
     	$SUDO rm -rf ./squashfs-root
