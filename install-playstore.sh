@@ -197,7 +197,7 @@ $SUDO echo "ro.opengles.version=131072" >> ./squashfs-root/system/build.prop
 
 #squash img
 cd "$WORKDIR"
-rm android.img
+$SUDO rm android.img
 $SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
 
 # update anbox snap images
