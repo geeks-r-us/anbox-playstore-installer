@@ -94,10 +94,12 @@ else
 fi
 
 
-if [ -d "$COMBINEDDIR" ]; then
+if [ ! -d "$COMBINEDDIR" ]; then
   # enable overlay fs
   $SUDO snap set anbox rootfs-overlay.enable=true
   $SUDO snap restart anbox.container-manager
+
+  sleep 20
 fi
 
 echo $OVERLAYDIR
