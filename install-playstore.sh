@@ -24,13 +24,15 @@
 # die when an error occurs
 set -e
 
-OPENGAPPS_RELEASEDATE="20180706"
+OPENGAPPS_RELEASEDATE="20180903"
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
 HOUDINI_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
 
+COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
+OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
 WORKDIR="$(pwd)/anbox-work"
 
 # check if script was started with BASH
@@ -91,6 +93,19 @@ else
 	SUDO=$(which sudo)
 fi
 
+
+if [ -d "$COMBINEDDIR" ]; then
+  # enable overlay fs
+  $SUDO snap set anbox rootfs-overlay.enable=true
+  $SUDO snap restart anbox.container-manager
+fi
+
+echo $OVERLAYDIR
+if [ ! -d "$OVERLAYDIR" ]; then
+    echo -e "Overlay no enabled ! Please check error messages!"
+	exit 1
+fi
+
 echo $WORKDIR
 if [ ! -d "$WORKDIR" ]; then
     mkdir "$WORKDIR"
@@ -121,13 +136,17 @@ do
 done
 
 cd "$WORKDIR"
+APPDIR="$OVERLAYDIR/system/priv-app" 
+if [ ! -d "$APPDIR" ]; then
+	$SUDO mkdir -p "$APPDIR"
+fi
 
-$SUDO cp -r ./$(find opengapps -type d -name "PrebuiltGmsCore")						./squashfs-root/system/priv-app/
-$SUDO cp -r ./$(find opengapps -type d -name "GoogleLoginService")				./squashfs-root/system/priv-app/
-$SUDO cp -r ./$(find opengapps -type d -name "Phonesky")									./squashfs-root/system/priv-app/
-$SUDO cp -r ./$(find opengapps -type d -name "GoogleServicesFramework")		./squashfs-root/system/priv-app/
+$SUDO cp -r ./$(find opengapps -type d -name "PrebuiltGmsCore")					$APPDIR
+$SUDO cp -r ./$(find opengapps -type d -name "GoogleLoginService")				$APPDIR
+$SUDO cp -r ./$(find opengapps -type d -name "Phonesky")						$APPDIR
+$SUDO cp -r ./$(find opengapps -type d -name "GoogleServicesFramework")			$APPDIR
 
-cd ./squashfs-root/system/priv-app/
+cd "$APPDIR"
 $SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework PrebuiltGmsCore
 
 # load houdini and spread it
@@ -138,26 +157,36 @@ if [ ! -f ./houdini.sfs ]; then
   $SUDO $UNSQUASHFS -f -d ./houdini ./houdini.sfs
 fi
 
-$SUDO cp -r ./houdini/houdini ./squashfs-root/system/bin/
+BINDIR="$OVERLAYDIR/system/bin"
+if [ ! -d "$BINDIR" ]; then
+   $SUDO mkdir -p "$BINDIR"
+fi
 
-$SUDO cp -r ./houdini/xstdata ./squashfs-root/system/bin/
-$SUDO chown -R 100000:100000 ./squashfs-root/system/bin/houdini ./squashfs-root/system/bin/xstdata
+$SUDO cp -r ./houdini/houdini "$BINDIR/houdini"
 
-$SUDO $WGET -q --show-progress -P ./squashfs-root/system/lib/ $HOUDINI_SO
-$SUDO chown -R 100000:100000 ./squashfs-root/system/lib/libhoudini.so
+$SUDO cp -r ./houdini/xstdata "$BINDIR/"
+$SUDO chown -R 100000:100000 "$BINDIR/houdini" "$BINDIR/xstdata"
 
-$SUDO mkdir -p ./squashfs-root/system/lib/arm
-$SUDO cp -r ./houdini/linker ./squashfs-root/system/lib/arm
-$SUDO cp -r ./houdini/*.so ./squashfs-root/system/lib/arm
-$SUDO cp -r ./houdini/nb ./squashfs-root/system/lib/arm/
+LIBDIR="$OVERLAYDIR/system/lib"
+if [ ! -d "$LIBDIR" ]; then
+   $SUDO mkdir -p "$LIBDIR"
+fi
 
-$SUDO chown -R 100000:100000 ./squashfs-root/system/lib/arm
+$SUDO $WGET -q --show-progress -P "$LIBDIR" $HOUDINI_SO
+$SUDO chown -R 100000:100000 "$LIBDIR/libhoudini.so"
+
+$SUDO mkdir -p "$LIBDIR/arm"
+$SUDO cp -r ./houdini/linker "$LIBDIR/arm"
+$SUDO cp -r ./houdini/*.so "$LIBDIR/arm"
+$SUDO cp -r ./houdini/nb "$LIBDIR/arm"
+
+$SUDO chown -R 100000:100000 "$LIBDIR/arm"
 
 # add houdini parser
-mkdir -p ./squashfs-root/system/etc/binfmt_misc
-echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" >> ./squashfs-root/system/etc/binfmt_misc/arm_dyn
-echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" >> ./squashfs-root/system/etc/binfmt_misc/arm_exe
-$SUDO chown -R 100000:100000 ./squashfs-root/system/etc/binfmt_misc
+$SUDO mkdir -p "$OVERLAYDIR/system/etc/binfmt_misc"
+echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" >> "$OVERLAYDIR/system/etc/binfmt_misc/arm_dyn"
+echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" >> "$OVERLAYDIR/system/etc/binfmt_misc/arm_exe"
+$SUDO chown -R 100000:100000 "$OVERLAYDIR/system/etc/binfmt_misc"
 
 # add features
 C=$(cat <<-END
@@ -179,53 +208,30 @@ END
 
 C=$(echo $C | sed 's/\//\\\//g')
 C=$(echo $C | sed 's/\"/\\\"/g')
-$SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" ./squashfs-root/system/etc/permissions/anbox.xml
+
+if [ ! -d "$OVERLAYDIR/system/etc/permissions/" ]; then
+  $SUDO mkdir -p "$OVERLAYDIR/system/etc/permissions/"
+  $SUDO cp "$WORKDIR/squashfs-root/system/etc/permissions/anbox.xml" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+fi
+
+$SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
 
 # make wifi and bt available
-$SUDO sed -i "/<unavailable-feature name=\"android.hardware.wifi\" \/>/d" ./squashfs-root/system/etc/permissions/anbox.xml
-$SUDO sed -i "/<unavailable-feature name=\"android.hardware.bluetooth\" \/>/d" ./squashfs-root/system/etc/permissions/anbox.xml
+$SUDO sed -i "/<unavailable-feature name=\"android.hardware.wifi\" \/>/d" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+$SUDO sed -i "/<unavailable-feature name=\"android.hardware.bluetooth\" \/>/d" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+
+if [ ! -x "$OVERLAYDIR/system/build.prop" ]; then
+  $SUDO cp "$WORKDIR/squashfs-root/system/build.prop" "$OVERLAYDIR/system/build.prop"
+fi
 
 # set processors
 ARM_TYPE=",armeabi-v7a,armeabi"
-$SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" ./squashfs-root/system/build.prop
-$SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" ./squashfs-root/system/build.prop
+$SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
+$SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
-$SUDO echo "persist.sys.nativebridge=1" >> ./squashfs-root/system/build.prop
+$SUDO echo "persist.sys.nativebridge=1" >> "$OVERLAYDIR/system/build.prop"
 
 # enable opengles
-$SUDO echo "ro.opengles.version=131072" >> ./squashfs-root/system/build.prop
+$SUDO echo "ro.opengles.version=131072" >> "$OVERLAYDIR/system/build.prop"
 
-#squash img
-cd "$WORKDIR"
-$SUDO rm android.img
-$SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
-
-# update anbox snap images
-cd /var/lib/snapd/snaps
-
-until $SUDO systemctl stop snap.anbox.container-manager.service
-do
-	sleep 10
-done
-
-for filename in anbox_*.snap
-do
-    NUMBER=${filename//[^0-9]/}
-		if [ "$NUMBER" ]; then
-    	echo "changing anbox snap $NUMBER"
-    	until $SUDO systemctl stop snap-anbox-$NUMBER.mount
-		do
-			sleep 10
-		done 
-    	$SUDO $UNSQUASHFS $filename
-    	$SUDO mv ./squashfs-root/android.img ./android.img-$NUMBER
-    	$SUDO cp "$WORKDIR/android.img" ./squashfs-root
-    	$SUDO rm $filename
-    	$SUDO $MKSQUASHFS squashfs-root $filename -b 131072 -comp xz -Xbcj x86
-    	$SUDO rm -rf ./squashfs-root
-    	$SUDO systemctl start snap-anbox-$NUMBER.mount
-		else
-			echo "Could not find number for: $filename"
-		fi
-done
-$SUDO systemctl start snap.anbox.container-manager.service
+$SUDO $SUDO snap restart anbox.container-manager
