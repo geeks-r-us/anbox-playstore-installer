@@ -110,9 +110,8 @@ $SUDO $UNSQUASHFS android.img
 cd "$WORKDIR"
 if [ ! -f ./$OPENGAPPS_FILE ]; then
   $WGET -q --show-progress $OPENGAPPS_URL
-  $UNZIP -d opengapps ./$OPENGAPPS_FILE
 fi
-
+[ -d opengapps ] || $UNZIP -d opengapps ./$OPENGAPPS_FILE
 
 cd ./opengapps/Core/
 for filename in *.tar.lz
