@@ -102,8 +102,16 @@ if [ -d "$WORKDIR/squashfs-root" ]; then
   $SUDO rm -rf squashfs-root
 fi
 
-# get image from anbox
-cp /snap/anbox/current/android.img .
+# try getting image from snap anbox installation
+if [ -e /snap/anbox/current/android.img ]; then
+  ln -svi /snap/anbox/current/android.img .
+fi
+
+if [ ! -e android.img ]; then
+  echo -e "android.img could not be found. Please copy or symlink it here\n$(pwd)/android.img"
+  exit 1
+fi
+
 $SUDO $UNSQUASHFS android.img
 
 # get opengapps and install it
@@ -200,32 +208,34 @@ echo "rebaking android.img"
 rm android.img
 $SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
 
+SERVICE_FILE=$(busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager ListUnitsByPatterns asas 0 1 '*anbox*container*'|sed -r 's/.*"([^"]+\.service)".*/\1/')
+until $SUDO systemctl stop $SERVICE_FILE
+do
+  sleep 10
+done
+
 # update anbox snap images
-cd /var/lib/snapd/snaps
-
-until $SUDO systemctl stop snap.anbox.container-manager.service
-do
-	sleep 10
-done
-
-for filename in anbox_*.snap
-do
+if [ -d /var/lib/snapd/snaps ]; then
+  cd /var/lib/snapd/snaps
+  for filename in anbox_*.snap
+  do
     NUMBER=${filename//[^0-9]/}
-		if [ "$NUMBER" ]; then
-    	echo "changing anbox snap $NUMBER"
-    	until $SUDO systemctl stop snap-anbox-$NUMBER.mount
-		do
-			sleep 10
-		done 
-    	$SUDO $UNSQUASHFS $filename
-    	$SUDO mv ./squashfs-root/android.img ./android.img-$NUMBER
-    	$SUDO cp "$WORKDIR/android.img" ./squashfs-root
-    	$SUDO rm $filename
-    	$SUDO $MKSQUASHFS squashfs-root $filename -b 131072 -comp xz -Xbcj x86
-    	$SUDO rm -rf ./squashfs-root
-    	$SUDO systemctl start snap-anbox-$NUMBER.mount
-		else
-			echo "Could not find number for: $filename"
-		fi
-done
-$SUDO systemctl start snap.anbox.container-manager.service
+      if [ "$NUMBER" ]; then
+        echo "changing anbox snap $NUMBER"
+        until $SUDO systemctl stop snap-anbox-$NUMBER.mount
+        do
+          sleep 10
+        done
+        $SUDO $UNSQUASHFS $filename
+        $SUDO mv ./squashfs-root/android.img ./android.img-$NUMBER
+        $SUDO cp "$WORKDIR/android.img" ./squashfs-root
+        $SUDO rm $filename
+        $SUDO $MKSQUASHFS squashfs-root $filename -b 131072 -comp xz -Xbcj x86
+        $SUDO rm -rf ./squashfs-root
+        $SUDO systemctl start snap-anbox-$NUMBER.mount
+      else
+        echo "Could not find number for: $filename"
+      fi
+  done
+fi
+$SUDO systemctl start $SERVICE_FILE
