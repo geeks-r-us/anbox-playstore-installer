@@ -21,6 +21,9 @@
 
 # For further information see: http://geeks-r-us.de/2017/08/26/android-apps-auf-dem-linux-desktop/
 
+# If you find this piece of software useful and or want to support it's development think of 
+# buying me a coffee https://www.buymeacoffee.com/YdV7B1rex
+
 # die when an error occurs
 set -e
 
