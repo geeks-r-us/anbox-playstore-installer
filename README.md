@@ -7,3 +7,4 @@ https://geeks-r-us.de/2018/09/04/anbox-update-overlay/
 
 Tested with Anbox Snap 145
 
+If you find this piece of software useful and or want to support it's development think of buying me a coffee https://www.buymeacoffee.com/YdV7B1rex
