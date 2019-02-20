@@ -27,17 +27,6 @@
 # die when an error occurs
 set -e
 
-OPENGAPPS_RELEASEDATE="20190209"
-OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
-OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
-
-HOUDINI_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
-HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
-
-COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
-OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
-WORKDIR="$(pwd)/anbox-work"
-
 # check if script was started with BASH
 if [ ! "$(ps -p $$ -oargs= | awk '{print $1}' | grep -E 'bash$')" ]; then
    echo "Please use BASH to start the script!"
@@ -67,6 +56,14 @@ else
 	WGET=$(which wget)
 fi
 
+# check if curl is installed
+if [ ! "$(which curl)" ]; then
+	echo -e "curl is not installed. Please install curl.\nExample: sudo apt install curl"
+	exit 1
+else
+	CURL=$(which curl)
+fi
+
 # check if unzip is installed
 if [ ! "$(which unzip)" ]; then
 	echo -e "unzip is not installed. Please install unzip.\nExample: sudo apt install unzip"
@@ -89,6 +86,18 @@ if [ ! "$(which sudo)" ]; then
 else
 	SUDO=$(which sudo)
 fi
+
+# get latest releasedate based on tag_name for latest x86_64 build
+OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | head -n 10 | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")" 
+OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
+OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
+
+HOUDINI_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
+HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
+
+COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
+OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
+WORKDIR="$(pwd)/anbox-work"
 
 
 if [ ! -d "$COMBINEDDIR" ]; then
