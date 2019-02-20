@@ -44,12 +44,6 @@ if [ ! "$(ps -p $$ -oargs= | awk '{print $1}' | grep -E 'bash$')" ]; then
 	 exit 1
 fi
 
-# check if user is root
-if [ "$(whoami)" != "root" ]; then
-	echo "Sorry, you are not root. Please run with sudo $0"
-	exit 1
-fi
-
 # check if lzip is installed
 if [ ! "$(which lzip)" ]; then
 	echo -e "lzip is not installed. Please install lzip.\nExample: sudo apt install lzip"
@@ -189,8 +183,8 @@ $SUDO chown -R 100000:100000 "$LIBDIR/arm"
 
 # add houdini parser
 $SUDO mkdir -p "$OVERLAYDIR/system/etc/binfmt_misc"
-echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" >> "$OVERLAYDIR/system/etc/binfmt_misc/arm_dyn"
-echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" >> "$OVERLAYDIR/system/etc/binfmt_misc/arm_exe"
+echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_dyn"
+echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_exe"
 $SUDO chown -R 100000:100000 "$OVERLAYDIR/system/etc/binfmt_misc"
 
 # add features
@@ -234,9 +228,9 @@ ARM_TYPE=",armeabi-v7a,armeabi"
 $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 $SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
-$SUDO echo "persist.sys.nativebridge=1" >> "$OVERLAYDIR/system/build.prop"
+echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
 # enable opengles
-$SUDO echo "ro.opengles.version=131072" >> "$OVERLAYDIR/system/build.prop"
+echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
-$SUDO $SUDO snap restart anbox.container-manager
+$SUDO snap restart anbox.container-manager
