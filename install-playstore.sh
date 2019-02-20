@@ -27,7 +27,7 @@
 # die when an error occurs
 set -e
 
-OPENGAPPS_RELEASEDATE="20180903"
+OPENGAPPS_RELEASEDATE="20190209"
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
@@ -115,7 +115,7 @@ cd "$WORKDIR"
 if [ -d "$WORKDIR/squashfs-root" ]; then
   $SUDO rm -rf squashfs-root
 fi
-
+echo "Extracting anbox android image"
 # get image from anbox
 cp /snap/anbox/current/android.img .
 $SUDO $UNSQUASHFS android.img
@@ -123,11 +123,12 @@ $SUDO $UNSQUASHFS android.img
 # get opengapps and install it
 cd "$WORKDIR"
 if [ ! -f ./$OPENGAPPS_FILE ]; then
+  echo "Loading open gapps from $OPENGAPPS_URL" 
   $WGET -q --show-progress $OPENGAPPS_URL
   $UNZIP -d opengapps ./$OPENGAPPS_FILE
 fi
 
-
+echo "extracting open gapps"
 cd ./opengapps/Core/
 for filename in *.tar.lz
 do
@@ -147,6 +148,8 @@ $SUDO cp -r ./$(find opengapps -type d -name "GoogleServicesFramework")			$APPDI
 
 cd "$APPDIR"
 $SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework PrebuiltGmsCore
+
+echo "adding lib houdini"
 
 # load houdini and spread it
 cd "$WORKDIR"
@@ -186,6 +189,8 @@ $SUDO mkdir -p "$OVERLAYDIR/system/etc/binfmt_misc"
 echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_dyn"
 echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_exe"
 $SUDO chown -R 100000:100000 "$OVERLAYDIR/system/etc/binfmt_misc"
+
+echo "Modify anbox features"
 
 # add features
 C=$(cat <<-END
@@ -232,5 +237,7 @@ echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
 # enable opengles
 echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
+
+echo "Restart anbox"
 
 $SUDO snap restart anbox.container-manager
