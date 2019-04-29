@@ -102,7 +102,8 @@ OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
-HOUDINI_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
+HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
+HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
 
 COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
@@ -170,47 +171,52 @@ $SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework
 
 echo "adding lib houdini"
 
-# load houdini and spread it
+# load houdini_y and spread it
 cd "$WORKDIR"
-if [ ! -f ./houdini.sfs ]; then
-  $WGET -q --show-progress $HOUDINI_URL
-  mkdir -p houdini
-  $SUDO $UNSQUASHFS -f -d ./houdini ./houdini.sfs
+if [ ! -f ./houdini_y.sfs ]; then
+  $WGET -O houdini_y.sfs -q --show-progress $HOUDINI_Y_URL
+  mkdir -p houdini_y
+  $SUDO $UNSQUASHFS -f -d ./houdini_y ./houdini_y.sfs
 fi
-
-BINDIR="$OVERLAYDIR/system/bin"
-if [ ! -d "$BINDIR" ]; then
-   $SUDO mkdir -p "$BINDIR"
-fi
-
-$SUDO cp -r ./houdini/houdini "$BINDIR/houdini"
-
-$SUDO cp -r ./houdini/xstdata "$BINDIR/"
-$SUDO chown -R 100000:100000 "$BINDIR/houdini" "$BINDIR/xstdata"
 
 LIBDIR="$OVERLAYDIR/system/lib"
 if [ ! -d "$LIBDIR" ]; then
    $SUDO mkdir -p "$LIBDIR"
 fi
 
-$SUDO $WGET -q --show-progress -P "$LIBDIR" $HOUDINI_SO
-$SUDO chown -R 100000:100000 "$LIBDIR/libhoudini.so"
-
 $SUDO mkdir -p "$LIBDIR/arm"
-$SUDO cp -r ./houdini/linker "$LIBDIR/arm"
-$SUDO cp -r ./houdini/*.so "$LIBDIR/arm"
-$SUDO cp -r ./houdini/nb "$LIBDIR/arm"
-
+$SUDO cp -r ./houdini_y/* "$LIBDIR/arm"
 $SUDO chown -R 100000:100000 "$LIBDIR/arm"
 
+# load houdini_z and spread it
+
+if [ ! -f ./houdini_z.sfs ]; then
+  $WGET -O houdini_z.sfs -q --show-progress $HOUDINI_Z_URL
+  mkdir -p houdini_z
+  $SUDO $UNSQUASHFS -f -d ./houdini_z ./houdini_z.sfs
+fi
+
+LIBDIR64="$OVERLAYDIR/system/lib64"
+if [ ! -d "$LIBDIR" ]; then
+   $SUDO mkdir -p "$LIBDIR"
+fi
+
+$SUDO mkdir -p "$LIBDIR64/arm64"
+$SUDO cp -r ./houdini_z/* "$LIBDIR64/arm64"
+$SUDO chown -R 100000:100000 "$LIBDIR64/arm64"
+
+
 # add houdini parser
-$SUDO mkdir -p "$OVERLAYDIR/system/etc/binfmt_misc"
-echo ":arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_dyn"
-echo ":arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/bin/houdini:" | $SUDO tee -a "$OVERLAYDIR/system/etc/binfmt_misc/arm_exe"
-$SUDO chown -R 100000:100000 "$OVERLAYDIR/system/etc/binfmt_misc"
+BINFMT_DIR="/proc/sys/fs/binfmt_misc/register"
+set +e
+echo ':arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/lib/arm/houdini:P' | $SUDO tee -a "$BINFMT_DIR"
+echo ':arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/lib/arm/houdini:P' | $SUDO tee -a "$BINFMT_DIR"
+echo ':arm64_exe:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7::/system/lib64/arm64/houdini64:P' | $SUDO tee -a "$BINFMT_DIR"
+echo ':arm64_dyn:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\xb7::/system/lib64/arm64/houdini64:P' | $SUDO tee -a "$BINFMT_DIR"
+
+set -e
 
 echo "Modify anbox features"
-
 # add features
 C=$(cat <<-END
   <feature name="android.hardware.touchscreen" />\n
@@ -253,6 +259,7 @@ $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDI
 $SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
 echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
+echo "ro.dalvik.vm.native.bridge=libhoudini.so" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
 # enable opengles
 echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
