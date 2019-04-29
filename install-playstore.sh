@@ -27,6 +27,21 @@
 # die when an error occurs
 set -e
 
+WORKDIR="$(pwd)/anbox-work"
+
+# use sudo if installed
+if [ ! "$(which sudo)" ]; then
+	SUDO=""
+else
+	SUDO=$(which sudo)
+fi
+
+# clean downloads
+if [ "$1" = "--clean" ]; then
+   $SUDO rm -rf "$WORKDIR"
+   exit 0
+fi
+
 # check if script was started with BASH
 if [ ! "$(ps -p $$ -oargs= | awk '{print $1}' | grep -E 'bash$')" ]; then
    echo "Please use BASH to start the script!"
@@ -80,12 +95,7 @@ else
 	TAR=$(which tar)
 fi
 
-# use sudo if installed
-if [ ! "$(which sudo)" ]; then
-	SUDO=""
-else
-	SUDO=$(which sudo)
-fi
+
 
 # get latest releasedate based on tag_name for latest x86_64 build
 OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | head -n 10 | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")" 
@@ -97,7 +107,7 @@ HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/li
 
 COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
 OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
-WORKDIR="$(pwd)/anbox-work"
+
 
 
 if [ ! -d "$COMBINEDDIR" ]; then
