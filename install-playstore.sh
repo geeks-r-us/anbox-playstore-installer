@@ -104,7 +104,6 @@ OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_
 
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
-HOUDINI_SO="https://github.com/Rprop/libhoudini/raw/master/4.0.8.45720/system/lib/libhoudini.so"
 
 COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
 OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
@@ -187,6 +186,7 @@ fi
 $SUDO mkdir -p "$LIBDIR/arm"
 $SUDO cp -r ./houdini_y/* "$LIBDIR/arm"
 $SUDO chown -R 100000:100000 "$LIBDIR/arm"
+$SUDO mv "$LIBDIR/arm/libhoudini.so" "$LIBDIR/libhoudini.so"
 
 # load houdini_z and spread it
 
@@ -197,14 +197,14 @@ if [ ! -f ./houdini_z.sfs ]; then
 fi
 
 LIBDIR64="$OVERLAYDIR/system/lib64"
-if [ ! -d "$LIBDIR" ]; then
-   $SUDO mkdir -p "$LIBDIR"
+if [ ! -d "$LIBDIR64" ]; then
+   $SUDO mkdir -p "$LIBDIR64"
 fi
 
 $SUDO mkdir -p "$LIBDIR64/arm64"
 $SUDO cp -r ./houdini_z/* "$LIBDIR64/arm64"
 $SUDO chown -R 100000:100000 "$LIBDIR64/arm64"
-
+$SUDO mv "$LIBDIR64/arm64/libhoudini.so" "$LIBDIR64/libhoudini.so"
 
 # add houdini parser
 BINFMT_DIR="/proc/sys/fs/binfmt_misc/register"
@@ -253,13 +253,17 @@ if [ ! -x "$OVERLAYDIR/system/build.prop" ]; then
   $SUDO cp "$WORKDIR/squashfs-root/system/build.prop" "$OVERLAYDIR/system/build.prop"
 fi
 
+if [ ! -x "$OVERLAYDIR/default.prop" ]; then
+  $SUDO cp "$WORKDIR/squashfs-root/default.prop" "$OVERLAYDIR/default.prop"
+fi
+
 # set processors
 ARM_TYPE=",armeabi-v7a,armeabi"
 $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 $SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
 echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
-echo "ro.dalvik.vm.native.bridge=libhoudini.so" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
+echo "ro.dalvik.vm.native.bridge=libhoudini.so" | $SUDO tee -a "$OVERLAYDIR/default.prop"
 
 # enable opengles
 echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
