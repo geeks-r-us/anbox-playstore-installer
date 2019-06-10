@@ -263,7 +263,7 @@ $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDI
 $SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
 echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
-echo "ro.dalvik.vm.native.bridge=libhoudini.so" | $SUDO tee -a "$OVERLAYDIR/default.prop"
+$SUDO sed -i '/ro.zygote=zygote64_32/a\ro.dalvik.vm.native.bridge=libhoudini.so' "$OVERLAYDIR/default.prop"
 
 # enable opengles
 echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
