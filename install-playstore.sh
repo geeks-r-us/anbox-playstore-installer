@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 root@geeks-r-us.de
+# Copyright 2019 root@geeks-r-us.de
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 # For further information see: http://geeks-r-us.de/2017/08/26/android-apps-auf-dem-linux-desktop/
 
 # If you find this piece of software useful and or want to support it's development think of 
-# buying me a coffee https://www.buymeacoffee.com/YdV7B1rex
+# buying me a coffee https://ko-fi.com/geeks_r_us
 
 # die when an error occurs
 set -e
@@ -258,7 +258,7 @@ if [ ! -x "$OVERLAYDIR/default.prop" ]; then
 fi
 
 # set processors
-ARM_TYPE=",armeabi-v7a,armeabi"
+ARM_TYPE=",armeabi-v7a,armeabi,arm64-v8a"
 $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 $SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
 
