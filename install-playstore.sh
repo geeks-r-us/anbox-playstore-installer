@@ -139,8 +139,9 @@ do
     $TAR --lzip -xvf ./$filename
 done
 
+echo "Setting Google Play"
 cd "$WORKDIR"
-APPDIR="$OVERLAYDIR/system/priv-app" 
+APPDIR="./squashfs-root/system/priv-app" 
 if [ ! -d "$APPDIR" ]; then
 	$SUDO mkdir -p "$APPDIR"
 fi
