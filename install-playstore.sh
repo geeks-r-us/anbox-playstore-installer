@@ -24,6 +24,8 @@
 # If you find this piece of software useful and or want to support it's development think of 
 # buying me a coffee https://ko-fi.com/geeks_r_us
 
+# This script was modified to work on the version of Anbox on Debian Repositiories 
+
 # die when an error occurs
 set -e
 
@@ -105,24 +107,7 @@ OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 
-COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
-OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
-
-
-
-if [ ! -d "$COMBINEDDIR" ]; then
-  # enable overlay fs
-  $SUDO snap set anbox rootfs-overlay.enable=true
-  $SUDO snap restart anbox.container-manager
-
-  sleep 20
-fi
-
-echo $OVERLAYDIR
-if [ ! -d "$OVERLAYDIR" ]; then
-    echo -e "Overlay no enabled ! Please check error messages!"
-	exit 1
-fi
+# Create the working directory
 
 echo $WORKDIR
 if [ ! -d "$WORKDIR" ]; then
@@ -136,7 +121,7 @@ if [ -d "$WORKDIR/squashfs-root" ]; then
 fi
 echo "Extracting anbox android image"
 # get image from anbox
-cp /snap/anbox/current/android.img .
+cp /var/lib/anbox/android.img .
 $SUDO $UNSQUASHFS android.img
 
 # get opengapps and install it
@@ -178,7 +163,7 @@ if [ ! -f ./houdini_y.sfs ]; then
   $SUDO $UNSQUASHFS -f -d ./houdini_y ./houdini_y.sfs
 fi
 
-LIBDIR="$OVERLAYDIR/system/lib"
+LIBDIR="./squashfs-root/system/lib"
 if [ ! -d "$LIBDIR" ]; then
    $SUDO mkdir -p "$LIBDIR"
 fi
@@ -196,7 +181,7 @@ if [ ! -f ./houdini_z.sfs ]; then
   $SUDO $UNSQUASHFS -f -d ./houdini_z ./houdini_z.sfs
 fi
 
-LIBDIR64="$OVERLAYDIR/system/lib64"
+LIBDIR64="./squashfs-root/system/lib64"
 if [ ! -d "$LIBDIR64" ]; then
    $SUDO mkdir -p "$LIBDIR64"
 fi
@@ -238,36 +223,46 @@ END
 C=$(echo $C | sed 's/\//\\\//g')
 C=$(echo $C | sed 's/\"/\\\"/g')
 
-if [ ! -d "$OVERLAYDIR/system/etc/permissions/" ]; then
-  $SUDO mkdir -p "$OVERLAYDIR/system/etc/permissions/"
-  $SUDO cp "$WORKDIR/squashfs-root/system/etc/permissions/anbox.xml" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+if [ ! -d "./squashfs-root/system/etc/permissions/" ]; then
+  $SUDO mkdir -p "./squashfs-root/system/etc/permissions/"
+  $SUDO cp "$WORKDIR/squashfs-root/system/etc/permissions/anbox.xml" "./squashfs-root/system/etc/permissions/anbox.xml"
 fi
 
-$SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+$SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" "./squashfs-root/system/etc/permissions/anbox.xml"
 
 # make wifi and bt available
-$SUDO sed -i "/<unavailable-feature name=\"android.hardware.wifi\" \/>/d" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
-$SUDO sed -i "/<unavailable-feature name=\"android.hardware.bluetooth\" \/>/d" "$OVERLAYDIR/system/etc/permissions/anbox.xml"
+$SUDO sed -i "/<unavailable-feature name=\"android.hardware.wifi\" \/>/d" "./squashfs-root/system/etc/permissions/anbox.xml"
+$SUDO sed -i "/<unavailable-feature name=\"android.hardware.bluetooth\" \/>/d" "./squashfs-root/system/etc/permissions/anbox.xml"
 
-if [ ! -x "$OVERLAYDIR/system/build.prop" ]; then
-  $SUDO cp "$WORKDIR/squashfs-root/system/build.prop" "$OVERLAYDIR/system/build.prop"
+if [ ! -x "./squashfs-root/system/build.prop" ]; then
+  $SUDO cp "$WORKDIR/squashfs-root/system/build.prop" "./squashfs-root/system/build.prop"
 fi
 
-if [ ! -x "$OVERLAYDIR/default.prop" ]; then
-  $SUDO cp "$WORKDIR/squashfs-root/default.prop" "$OVERLAYDIR/default.prop"
+if [ ! -x "./squashfs-root/default.prop" ]; then
+  $SUDO cp "$WORKDIR/squashfs-root/default.prop" "./squashfs-root/default.prop"
 fi
 
 # set processors
 ARM_TYPE=",armeabi-v7a,armeabi,arm64-v8a"
-$SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
-$SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "$OVERLAYDIR/system/build.prop"
+$SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "./squashfs-root/system/build.prop"
+$SUDO sed -i "/^ro.product.cpu.abilist32=x86/ s/$/${ARM_TYPE}/" "./squashfs-root/system/build.prop"
 
-echo "persist.sys.nativebridge=1" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
-$SUDO sed -i '/ro.zygote=zygote64_32/a\ro.dalvik.vm.native.bridge=libhoudini.so' "$OVERLAYDIR/default.prop"
+echo "persist.sys.nativebridge=1" | $SUDO tee -a "./squashfs-root/system/build.prop"
+$SUDO sed -i '/ro.zygote=zygote64_32/a\ro.dalvik.vm.native.bridge=libhoudini.so' "./squashfs-root/default.prop"
 
 # enable opengles
-echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
+echo "ro.opengles.version=131072" | $SUDO tee -a "./squashfs-root/system/build.prop"
 
-echo "Restart anbox"
+echo "Rebuild Android rootfs image."
 
-$SUDO snap restart anbox.container-manager
+#squash img
+cd "$WORKDIR"
+rm android.img
+$SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
+
+# update anbox image
+cd /var/lib/anbox
+mv android.img android_bkup.img
+mv "$WORKDIR/android.img" android.img 
+
+echo "Restart your computer, before run Anbox."
