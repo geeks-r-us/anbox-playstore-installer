@@ -233,14 +233,6 @@ $SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" "./squashfs-root/system/etc/permi
 $SUDO sed -i "/<unavailable-feature name=\"android.hardware.wifi\" \/>/d" "./squashfs-root/system/etc/permissions/anbox.xml"
 $SUDO sed -i "/<unavailable-feature name=\"android.hardware.bluetooth\" \/>/d" "./squashfs-root/system/etc/permissions/anbox.xml"
 
-if [ ! -x "./squashfs-root/system/build.prop" ]; then
-  $SUDO cp "$WORKDIR/squashfs-root/system/build.prop" "./squashfs-root/system/build.prop"
-fi
-
-if [ ! -x "./squashfs-root/default.prop" ]; then
-  $SUDO cp "$WORKDIR/squashfs-root/default.prop" "./squashfs-root/default.prop"
-fi
-
 # set processors
 ARM_TYPE=",armeabi-v7a,armeabi,arm64-v8a"
 $SUDO sed -i "/^ro.product.cpu.abilist=x86_64,x86/ s/$/${ARM_TYPE}/" "./squashfs-root/system/build.prop"
