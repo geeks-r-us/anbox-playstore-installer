@@ -225,7 +225,6 @@ C=$(echo $C | sed 's/\"/\\\"/g')
 
 if [ ! -d "./squashfs-root/system/etc/permissions/" ]; then
   $SUDO mkdir -p "./squashfs-root/system/etc/permissions/"
-  $SUDO cp "$WORKDIR/squashfs-root/system/etc/permissions/anbox.xml" "./squashfs-root/system/etc/permissions/anbox.xml"
 fi
 
 $SUDO sed -i "/<\/permissions>/ s/.*/${C}\n&/" "./squashfs-root/system/etc/permissions/anbox.xml"
