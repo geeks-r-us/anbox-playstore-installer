@@ -100,7 +100,7 @@ fi
 # get latest releasedate based on tag_name for latest x86_64 build
 OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | head -n 10 | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")" 
 OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
-OPENGAPPS_URL="https://github.com/opengapps/x86_64/releases/download/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
+OPENGAPPS_URL="https://sourceforge.net/projects/opengapps/files/x86_64/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
