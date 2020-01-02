@@ -254,7 +254,7 @@ $SUDO $MKSQUASHFS squashfs-root android.img -b 131072 -comp xz -Xbcj x86
 
 # update anbox image
 cd /var/lib/anbox
-mv android.img android_bkup.img
-mv "$WORKDIR/android.img" android.img 
+$SUDO mv android.img android_bkup.img
+$sudo mv "$WORKDIR/android.img" android.img 
 
 echo "Restart your computer, before run Anbox."
