@@ -21,7 +21,7 @@
 
 # For further information see: http://geeks-r-us.de/2017/08/26/android-apps-auf-dem-linux-desktop/
 
-# If you find this piece of software useful and or want to support it's development think of 
+# If you find this piece of software useful and or want to support it's development think of
 # buying me a coffee https://ko-fi.com/geeks_r_us
 
 # die when an error occurs
@@ -98,22 +98,37 @@ fi
 
 
 # get latest releasedate based on tag_name for latest x86_64 build
-OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | head -n 10 | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")" 
-OPENGAPPS_FILE="open_gapps-x86_64-7.1-mini-$OPENGAPPS_RELEASEDATE.zip"
+OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | head -n 10 | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")"
+OPENGAPPS_FILE="open_gapps-x86_64-7.1-${VARIANT:-mini}-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://sourceforge.net/projects/opengapps/files/x86_64/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 
-COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
-OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
-
-
+if [ -d '/snap' ] && [ "$(which anbox)" = "/snap/bin/anbox" ];then
+	COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
+	OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
+	WITH_SNAP=true
+else
+	COMBINEDDIR="/var/lib/anbox/combined-rootfs"
+	OVERLAYDIR="/var/lib/anbox/rootfs-overlay"
+	WITH_SNAP=false
+fi
 
 if [ ! -d "$COMBINEDDIR" ]; then
   # enable overlay fs
-  $SUDO snap set anbox rootfs-overlay.enable=true
-  $SUDO snap restart anbox.container-manager
+  	if $WITH_SNAP;then
+		$SUDO snap set anbox rootfs-overlay.enable=true
+		$SUDO snap restart anbox.container-manager
+	else
+		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay
+EOF
+		$SUDO systemctl daemon-reload
+		$SUDO systemctl restart anbox-container-manager.service
+	fi
 
   sleep 20
 fi
@@ -136,13 +151,17 @@ if [ -d "$WORKDIR/squashfs-root" ]; then
 fi
 echo "Extracting anbox android image"
 # get image from anbox
-cp /snap/anbox/current/android.img .
+if $WITH_SNAP;then
+	cp /snap/anbox/current/android.img .
+else
+	cp /var/lib/anbox/android.img .
+fi
 $SUDO $UNSQUASHFS android.img
 
 # get opengapps and install it
 cd "$WORKDIR"
 if [ ! -f ./$OPENGAPPS_FILE ]; then
-  echo "Loading open gapps from $OPENGAPPS_URL" 
+  echo "Loading open gapps from $OPENGAPPS_URL"
   $WGET -q --show-progress $OPENGAPPS_URL
   $UNZIP -d opengapps ./$OPENGAPPS_FILE
 fi
@@ -155,7 +174,7 @@ do
 done
 
 cd "$WORKDIR"
-APPDIR="$OVERLAYDIR/system/priv-app" 
+APPDIR="$OVERLAYDIR/system/priv-app"
 if [ ! -d "$APPDIR" ]; then
 	$SUDO mkdir -p "$APPDIR"
 fi
@@ -270,4 +289,8 @@ echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
 echo "Restart anbox"
 
-$SUDO snap restart anbox.container-manager
+if $WITH_SNAP;then
+	$SUDO snap restart anbox.container-manager
+else
+	$SUDO systemctl releasesstart anbox-container-manager.service
+fi
