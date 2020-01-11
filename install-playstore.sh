@@ -298,5 +298,5 @@ echo "Restart anbox"
 if $WITH_SNAP;then
 	$SUDO snap restart anbox.container-manager
 else
-	$SUDO systemctl releasesstart anbox-container-manager.service
+	$SUDO systemctl restart anbox-container-manager.service
 fi
