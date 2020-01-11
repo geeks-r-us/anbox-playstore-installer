@@ -160,13 +160,19 @@ $SUDO $UNSQUASHFS android.img
 
 # get opengapps and install it
 cd "$WORKDIR"
-if [ ! -f ./$OPENGAPPS_FILE ]; then
-  echo "Loading open gapps from $OPENGAPPS_URL"
-  $WGET -q --show-progress $OPENGAPPS_URL
-  $UNZIP -d opengapps ./$OPENGAPPS_FILE
-fi
-
+echo "Loading open gapps from $OPENGAPPS_URL"
+while : ;do
+ if [ ! -f ./$OPENGAPPS_FILE ]; then
+	 $WGET -q --show-progress $OPENGAPPS_URL
+ else
+	 $WGET -q --show-progress -c $OPENGAPPS_URL
+ fi
+ [ $? = 0 ] && break
+done
 echo "extracting open gapps"
+
+$UNZIP -d opengapps ./$OPENGAPPS_FILE
+
 cd ./opengapps/Core/
 for filename in *.tar.lz
 do
