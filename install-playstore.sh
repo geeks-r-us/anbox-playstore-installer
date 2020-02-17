@@ -105,7 +105,15 @@ OPENGAPPS_URL="https://sourceforge.net/projects/opengapps/files/x86_64/$OPENGAPP
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 
-if [ -d '/snap' ] && [ "$(which anbox)" = "/snap/bin/anbox" ];then
+ANBOX=$(which anbox)
+SNAP_TOP=""
+if ( [ -d '/var/snap' ] || [ -d '/snap' ] ) && \
+	( [ ${ANBOX} = "/snap/bin/anbox" ] || [ ${ANBOX} == /var/lib/snapd/snap/bin/anbox ] );then
+	if [ -d '/snap' ];then
+		SNAP_TOP=/snap
+	else
+		SNAP_TOP=/var/lib/snapd/snap
+	fi
 	COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
 	OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
 	WITH_SNAP=true
@@ -152,7 +160,7 @@ fi
 echo "Extracting anbox android image"
 # get image from anbox
 if $WITH_SNAP;then
-	cp /snap/anbox/current/android.img .
+	cp $SNAP_TOP/anbox/current/android.img .
 else
 	cp /var/lib/anbox/android.img .
 fi
