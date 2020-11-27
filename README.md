@@ -5,7 +5,7 @@ A detailed description of the installation steps can be found under:
 ~~https://geeks-r-us.de/2017/08/26/android-apps-auf-dem-linux-desktop/~~
 https://geeks-r-us.de/2018/09/04/anbox-update-overlay/
 
-Tested with Anbox Snap 173
+Tested with Anbox Snap 186 on Ubuntu 20.04 and 20.10
 
 COMMANDS:
  --clean    remove downloads and temporary files
