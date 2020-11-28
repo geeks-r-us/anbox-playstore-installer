@@ -42,6 +42,14 @@ if [ "$1" = "--clean" ]; then
    exit 0
 fi
 
+# choose gapp variant
+GAPP="pico"
+if [ "$1" = "--gapp" ]; then
+  case "$2" in
+	pico|nano|micro|mini|full|stock|super) 	GAPP=$2 ;;
+	*) 										echo "$2 is not a valid argument for --gapp!  Allowed argument for gapp is pico|nano|micro|mini|full|stock|super"; exit 1 ;;
+  esac
+fi
 # check if script was started with BASH
 if [ ! "$(ps -p $$ -oargs= | awk '{print $1}' | grep -E 'bash$')" ]; then
    echo "Please use BASH to start the script!"
@@ -99,7 +107,7 @@ fi
 
 # get latest releasedate based on tag_name for latest x86_64 build
 OPENGAPPS_RELEASEDATE="$($CURL -s https://api.github.com/repos/opengapps/x86_64/releases/latest | grep tag_name | grep -o "\"[0-9][0-9]*\"" | grep -o "[0-9]*")"
-OPENGAPPS_FILE="open_gapps-x86_64-7.1-pico-$OPENGAPPS_RELEASEDATE.zip"
+OPENGAPPS_FILE="open_gapps-x86_64-7.1-$GAPP-$OPENGAPPS_RELEASEDATE.zip"
 OPENGAPPS_URL="https://sourceforge.net/projects/opengapps/files/x86_64/$OPENGAPPS_RELEASEDATE/$OPENGAPPS_FILE"
 
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
@@ -193,13 +201,30 @@ if [ ! -d "$APPDIR" ]; then
 	$SUDO mkdir -p "$APPDIR"
 fi
 
-$SUDO cp -r ./$(find opengapps -type d -name "PrebuiltGmsCore")					$APPDIR
-$SUDO cp -r ./$(find opengapps -type d -name "GoogleLoginService")				$APPDIR
-$SUDO cp -r ./$(find opengapps -type d -name "Phonesky")						$APPDIR
-$SUDO cp -r ./$(find opengapps -type d -name "GoogleServicesFramework")			$APPDIR
+apps=()
+
+case "$GAPP" in 
+	 super)	apps+=() ;&
+	 stock) apps+=() ;&
+	 full)  apps+=() ;&
+	 mini)  apps+=() ;&
+	 micro) apps+=() ;&
+	 nano)  apps+=() ;&
+	 pico)	apps+=("PrebuiltGmsCore" "GoogleLoginService" "Phonesky" "GoogleServicesFramework") ;;
+esac
+
+for app i "${apps[@]}"
+do
+	echo "Installing $app\n"
+	$SUDO cp -r ./$(find opengapps -type d -name "$app")					$APPDIR	
+done
+
 
 cd "$APPDIR"
-$SUDO chown -R 100000:100000 Phonesky GoogleLoginService GoogleServicesFramework PrebuiltGmsCore
+for app i "${apps[@]}"
+do
+	$SUDO chown -R 100000:100000 $app
+done
 
 echo "adding lib houdini"
 
@@ -242,10 +267,12 @@ $SUDO mv "$LIBDIR64/arm64/libhoudini.so" "$LIBDIR64/libhoudini.so"
 # add houdini parser
 BINFMT_DIR="/proc/sys/fs/binfmt_misc/register"
 set +e
-echo ':arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/lib/arm/houdini:P' | $SUDO tee -a "$BINFMT_DIR"
-echo ':arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/lib/arm/houdini:P' | $SUDO tee -a "$BINFMT_DIR"
-echo ':arm64_exe:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7::/system/lib64/arm64/houdini64:P' | $SUDO tee -a "$BINFMT_DIR"
-echo ':arm64_dyn:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\xb7::/system/lib64/arm64/houdini64:P' | $SUDO tee -a "$BINFMT_DIR"
+echo     ':arm_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/lib/arm/houdini:POC' | $SUDO tee -a "$BINFMT_DIR"
+echo     ':arm_dyn:M::\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x28::/system/lib/arm/houdini:POC' | $SUDO tee -a "$BINFMT_DIR"
+echo   ':armv7_exe:M::\x7f\x45\x4c\x46\x01\x01\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28::/system/lib/arm/houdini:POC' | $SUDO tee -a "$BINFMT_DIR"
+echo   ':arm64_exe:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7::/system/lib64/arm64/houdini64:POC' | $SUDO tee -a "$BINFMT_DIR"
+echo   ':arm64_dyn:M::\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\xb7::/system/lib64/arm64/houdini64:POC' | $SUDO tee -a "$BINFMT_DIR"
+echo ':arm64_exe_3:M::\x7f\x45\x4c\x46\x02\x01\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7::/system/lib64/arm64/houdini64:POC' | $SUDO tee -a "$BINFMT_DIR"
 
 set -e
 

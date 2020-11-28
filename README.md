@@ -9,5 +9,7 @@ Tested with Anbox Snap 186 on Ubuntu 20.04 and 20.10
 
 COMMANDS:
  --clean    remove downloads and temporary files
+ --gapp     choose gapps version options:  pico(default)|nano|micro|mini|full|stock|super
+
 
 If you find this piece of software useful and or want to support it's development think of buying me a coffee https://www.buymeacoffee.com/YdV7B1rex
