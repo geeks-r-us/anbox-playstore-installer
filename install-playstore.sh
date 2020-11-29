@@ -196,6 +196,13 @@ do
 done
 
 cd "$WORKDIR"
+cd ./opengapps/GApps/
+for filename in *.tar.lz
+do
+    $TAR --lzip -xvf ./$filename
+done
+
+cd "$WORKDIR"
 APPDIR="$OVERLAYDIR/system/priv-app"
 if [ ! -d "$APPDIR" ]; then
 	$SUDO mkdir -p "$APPDIR"
@@ -213,7 +220,7 @@ case "$GAPP" in
 	 pico)	apps+=("PrebuiltGmsCore" "GoogleLoginService" "Phonesky" "GoogleServicesFramework") ;;
 esac
 
-for app i "${apps[@]}"
+for app in "${apps[@]}"
 do
 	echo "Installing $app\n"
 	$SUDO cp -r ./$(find opengapps -type d -name "$app")					$APPDIR	
@@ -221,7 +228,7 @@ done
 
 
 cd "$APPDIR"
-for app i "${apps[@]}"
+for app in "${apps[@]}"
 do
 	$SUDO chown -R 100000:100000 $app
 done
