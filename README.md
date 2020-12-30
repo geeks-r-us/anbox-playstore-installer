@@ -11,3 +11,12 @@ COMMANDS:
  --clean    remove downloads and temporary files
 
 If you find this piece of software useful and or want to support it's development think of buying me a coffee https://www.buymeacoffee.com/YdV7B1rex
+
+## Installation
+
+**Ubuntu**
+
+```bash
+sudo apt install lzip
+wget -O -  https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh | bash
+```
