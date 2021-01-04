@@ -166,6 +166,16 @@ else
 fi
 $SUDO $UNSQUASHFS android.img
 
+#get Install German Keyboard Layout
+cd "$WORKDIR"
+  $WGET -q --show-progress -c https://phoenixnap.dl.sourceforge.net/project/androidx86rc2te/Generic_de_DE.kcm
+  $SUDO cp Generic_de_DE.kcm $WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm
+
+if [ ! -d "$OVERLAYDIR/system/usr/keychars/" ]; then
+  $SUDO mkdir -p "$OVERLAYDIR/system/usr/keychars/"
+  $SUDO cp "$WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm" "$OVERLAYDIR/system/usr/keychars/anbox-keyboard.kcm"
+fi
+
 # get opengapps and install it
 cd "$WORKDIR"
 echo "Loading open gapps from $OPENGAPPS_URL"
