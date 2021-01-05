@@ -166,15 +166,26 @@ else
 fi
 $SUDO $UNSQUASHFS android.img
 
-#get Install German Keyboard Layout
-cd "$WORKDIR"
-  $WGET -q --show-progress -c https://phoenixnap.dl.sourceforge.net/project/androidx86rc2te/Generic_de_DE.kcm
-  $SUDO cp Generic_de_DE.kcm $WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm
+#asked if German KEyboard is wished for, get and install it
+while true; do
+    read -p "Do you wish to install a German Keyboard Layout (QWERTZ) instead of the English one(QWERTY)? [Y]es or [N]o? " yn
+    case $yn in
+        [Yy]* )
+		      cd "$WORKDIR"
+            $WGET -q --show-progress -c https://phoenixnap.dl.sourceforge.net/project/androidx86rc2te/Generic_de_DE.kcm
+            $SUDO cp Generic_de_DE.kcm $WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm
 
-if [ ! -d "$OVERLAYDIR/system/usr/keychars/" ]; then
-  $SUDO mkdir -p "$OVERLAYDIR/system/usr/keychars/"
-  $SUDO cp "$WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm" "$OVERLAYDIR/system/usr/keychars/anbox-keyboard.kcm"
-fi
+          if [ ! -d "$OVERLAYDIR/system/usr/keychars/" ]; then
+            $SUDO mkdir -p "$OVERLAYDIR/system/usr/keychars/"
+            $SUDO cp "$WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm" "$OVERLAYDIR/system/usr/keychars/anbox-keyboard.kcm"
+          fi
+
+        echo "German Keymap installed"; break;;
+        [Nn]* ) echo "Standard English Keymap chosen"; break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
 
 # get opengapps and install it
 cd "$WORKDIR"
