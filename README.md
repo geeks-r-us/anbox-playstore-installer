@@ -9,6 +9,7 @@ Tested with Anbox Snap 186 on Ubuntu 20.04 and 20.10
 
 COMMANDS:
  --clean    remove downloads and temporary files
+ --layout   installs specific keyboard layout options are: da_DK de_CH de_DE en_GB en_UK en_US es_ES es_US fr_BE fr_CH fr_FR it_IT nl_NL pt_BR pt_PT ru_RU
 
 ## Installation
 
