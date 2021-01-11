@@ -10,5 +10,15 @@ Tested with Anbox Snap 186 on Ubuntu 20.04 and 20.10
 COMMANDS:
  --clean    remove downloads and temporary files
 
+## Installation
+
+**Ubuntu**
+
+```bash
+sudo apt install lzip
+wget -O -  https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh | bash
+```
+
 ## Support
 If you find this software useful please support me with a cup of [coffee](https://ko-fi.com/geeks_r_us) or start [sponsoring](https://github.com/sponsors/geeks-r-us) my work
+
