@@ -105,6 +105,29 @@ OPENGAPPS_URL="https://sourceforge.net/projects/opengapps/files/x86_64/$OPENGAPP
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 
+KEYBOARD_LAYOUTS="da_DK de_CH de_DE en_GB en_UK en_US es_ES es_US fr_BE fr_CH fr_FR it_IT nl_NL pt_BR pt_PT ru_RU"
+
+contains() {
+	local list="$1"
+	local item="$2"
+	if [[ "$list" =~ (^|[[:space:]])"$item"($|[[:space:]]) ]] ; then
+		return 0
+	else 
+		return 1
+	fi
+}
+
+
+if [ "$1" = "--layout" ]; then
+	if  ! contains "$KEYBOARD_LAYOUTS" "$2" ; then
+		echo "$2 is not a supported keyboard layout. Supported layouts are: $KEYBOARD_LAYOUTS"
+		exit 1
+	else 
+		echo "Keyboard layout $2 selected"
+	fi
+fi
+
+
 ANBOX=$(which anbox)
 SNAP_TOP=""
 if ( [ -d '/var/snap' ] || [ -d '/snap' ] ) && \
@@ -165,6 +188,19 @@ else
 	cp /var/lib/anbox/android.img .
 fi
 $SUDO $UNSQUASHFS android.img
+
+if [ "$1" = "--layout" ]; then
+
+	cd "$WORKDIR"
+    $WGET -q --show-progress -O anbox-keyboard.kcm -c https://phoenixnap.dl.sourceforge.net/project/androidx86rc2te/Generic_$2.kcm
+	$SUDO cp anbox-keyboard.kcm $WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm
+
+    if [ ! -d "$OVERLAYDIR/system/usr/keychars/" ]; then
+    	$SUDO mkdir -p "$OVERLAYDIR/system/usr/keychars/"
+        $SUDO cp "$WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm" "$OVERLAYDIR/system/usr/keychars/anbox-keyboard.kcm"
+	fi
+fi
+
 
 # get opengapps and install it
 cd "$WORKDIR"
