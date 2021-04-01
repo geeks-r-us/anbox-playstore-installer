@@ -21,7 +21,7 @@
 
 # For further information see: http://geeks-r-us.de/2017/08/26/android-apps-auf-dem-linux-desktop/
 
-# If you find this piece of software useful and or want to support it's development think of 
+# If you find this piece of software useful and or want to support it's development think of
 # buying me a coffee https://ko-fi.com/geeks_r_us
 
 # die when an error occurs
@@ -95,19 +95,64 @@ else
 	TAR=$(which tar)
 fi
 
-
 HOUDINI_Y_URL="http://dl.android-x86.org/houdini/7_y/houdini.sfs"
 HOUDINI_Z_URL="http://dl.android-x86.org/houdini/7_z/houdini.sfs"
 
-COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
-OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
+KEYBOARD_LAYOUTS="da_DK de_CH de_DE en_GB en_UK en_US es_ES es_US fr_BE fr_CH fr_FR it_IT nl_NL pt_BR pt_PT ru_RU"
+
+contains() {
+	local list="$1"
+	local item="$2"
+	if [[ "$list" =~ (^|[[:space:]])"$item"($|[[:space:]]) ]] ; then
+		return 0
+	else 
+		return 1
+	fi
+}
 
 
+if [ "$1" = "--layout" ]; then
+	if  ! contains "$KEYBOARD_LAYOUTS" "$2" ; then
+		echo "$2 is not a supported keyboard layout. Supported layouts are: $KEYBOARD_LAYOUTS"
+		exit 1
+	else 
+		echo "Keyboard layout $2 selected"
+	fi
+fi
+
+
+ANBOX=$(which anbox)
+SNAP_TOP=""
+if ( [ -d '/var/snap' ] || [ -d '/snap' ] ) && \
+	( [ ${ANBOX} = "/snap/bin/anbox" ] || [ ${ANBOX} == /var/lib/snapd/snap/bin/anbox ] );then
+	if [ -d '/snap' ];then
+		SNAP_TOP=/snap
+	else
+		SNAP_TOP=/var/lib/snapd/snap
+	fi
+	COMBINEDDIR="/var/snap/anbox/common/combined-rootfs"
+	OVERLAYDIR="/var/snap/anbox/common/rootfs-overlay"
+	WITH_SNAP=true
+else
+	COMBINEDDIR="/var/lib/anbox/combined-rootfs"
+	OVERLAYDIR="/var/lib/anbox/rootfs-overlay"
+	WITH_SNAP=false
+fi
 
 if [ ! -d "$COMBINEDDIR" ]; then
   # enable overlay fs
-  $SUDO snap set anbox rootfs-overlay.enable=true
-  $SUDO snap restart anbox.container-manager
+  	if $WITH_SNAP;then
+		$SUDO snap set anbox rootfs-overlay.enable=true
+		$SUDO snap restart anbox.container-manager
+	else
+		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay
+EOF
+		$SUDO systemctl daemon-reload
+		$SUDO systemctl restart anbox-container-manager.service
+	fi
 
   sleep 20
 fi
@@ -130,8 +175,24 @@ if [ -d "$WORKDIR/squashfs-root" ]; then
 fi
 echo "Extracting anbox android image"
 # get image from anbox
-cp /snap/anbox/current/android.img .
+if $WITH_SNAP;then
+	cp $SNAP_TOP/anbox/current/android.img .
+else
+	cp /var/lib/anbox/android.img .
+fi
 $SUDO $UNSQUASHFS android.img
+
+if [ "$1" = "--layout" ]; then
+
+	cd "$WORKDIR"
+    $WGET -q --show-progress -O anbox-keyboard.kcm -c https://phoenixnap.dl.sourceforge.net/project/androidx86rc2te/Generic_$2.kcm
+	$SUDO cp anbox-keyboard.kcm $WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm
+
+    if [ ! -d "$OVERLAYDIR/system/usr/keychars/" ]; then
+    	$SUDO mkdir -p "$OVERLAYDIR/system/usr/keychars/"
+        $SUDO cp "$WORKDIR/squashfs-root/system/usr/keychars/anbox-keyboard.kcm" "$OVERLAYDIR/system/usr/keychars/anbox-keyboard.kcm"
+	fi
+fi
 
 echo "adding lib houdini"
 
@@ -235,4 +296,8 @@ echo "ro.opengles.version=131072" | $SUDO tee -a "$OVERLAYDIR/system/build.prop"
 
 echo "Restart anbox"
 
-$SUDO snap restart anbox.container-manager
+if $WITH_SNAP;then
+	$SUDO snap restart anbox.container-manager
+else
+	$SUDO systemctl restart anbox-container-manager.service
+fi
