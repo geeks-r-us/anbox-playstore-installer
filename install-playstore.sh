@@ -158,7 +158,7 @@ if [ ! -d "$COMBINEDDIR" ]; then
 		if [ ! -d "/etc/systemd/system/anbox-container-manager.service.d/" ]; then
 			# Informing the user about creation of the directory
 			echo "Creating /etc/systemd/system/anbox-container-manager.service.d/ directory"
-			$SUDO mkdir -p /etc/systemd/system/anbox-container-manager.service.d/override.conf
+			$SUDO mkdir -p /etc/systemd/system/anbox-container-manager.service.d/
 		fi
 		
 		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
