@@ -152,6 +152,15 @@ if [ ! -d "$COMBINEDDIR" ]; then
 		$SUDO snap set anbox rootfs-overlay.enable=true
 		$SUDO snap restart anbox.container-manager
 	else
+		# As fix for https://github.com/geeks-r-us/anbox-playstore-installer/issues/54 so none need manually create the structure
+		# Author @NickWilde263 (Just call me Fox)
+	        # "mkdir" won't report error when the path already exist because of "-p" see "man mkdir" about "-p" option
+		if [ ! -d "/etc/systemd/system/anbox-container-manager.service.d/" ]; then
+			# Informing the user about creation of the directory
+			echo "Creating /etc/systemd/system/anbox-container-manager.service.d/ directory"
+			$SUDO mkdir -p /etc/systemd/system/anbox-container-manager.service.d/override.conf
+		fi
+		
 		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
 [Service]
 ExecStart=
