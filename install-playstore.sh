@@ -161,7 +161,7 @@ if [ ! -d "$COMBINEDDIR" ]; then
 			$SUDO mkdir -p /etc/systemd/system/anbox-container-manager.service.d/
 		fi
 		
-		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
+		$SUDO tee /etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF >/dev/null
 [Service]
 ExecStart=
 ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay
