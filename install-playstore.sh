@@ -128,7 +128,14 @@ if [ "$1" = "--layout" ]; then
 fi
 
 
-ANBOX=$(which anbox)
+# check if curl is installed
+if [ ! "$(which anbox)" ]; then
+	echo -e "anbox can't be found. Please make sure anbox is installed and /snap/bin is in PATH.\nExample 1: sudo snap install --devmode --beta anbox\nExample 2: PATH=\$PATH:/snap/bin"
+	exit 1
+else
+	ANBOX=$(which anbox)
+fi
+
 SNAP_TOP=""
 if ( [ -d '/var/snap' ] || [ -d '/snap' ] ) && \
 	( [ ${ANBOX} = "/snap/bin/anbox" ] || [ ${ANBOX} == /var/lib/snapd/snap/bin/anbox ] );then
