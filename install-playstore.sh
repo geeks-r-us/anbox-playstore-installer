@@ -128,10 +128,10 @@ if [ "$1" = "--layout" ]; then
 fi
 
 
-ANBOX=$(which anbox)
+ANBOX=$(which /snap/bin/anbox)
 SNAP_TOP=""
 if ( [ -d '/var/snap' ] || [ -d '/snap' ] ) && \
-	( [ ${ANBOX} = "/snap/bin/anbox" ] || [ ${ANBOX} == /var/lib/snapd/snap/bin/anbox ] );then
+	( [ ${ANBOX} = "/snap/bin/anbox" ] || [ -d '/snap' ] );then
 	if [ -d '/snap' ];then
 		SNAP_TOP=/snap
 	else
@@ -161,7 +161,7 @@ if [ ! -d "$COMBINEDDIR" ]; then
 			$SUDO mkdir -p /etc/systemd/system/anbox-container-manager.service.d/
 		fi
 		
-		$SUDO cat >/etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF
+		$SUDO tee /etc/systemd/system/anbox-container-manager.service.d/override.conf<<EOF >/dev/null
 [Service]
 ExecStart=
 ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay
